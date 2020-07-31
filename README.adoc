@@ -1,0 +1,9 @@
+= pwapwdb
+This project's name says it all, if you can say it all.
+pwapwdb: Progressive Web App Password Database
+
+It is a simple (https://web.dev/progressive-web-apps/)[progressive web app] mostly written as a webassembly application with Rust.
+Being a PWA means it is a simple web page installable on a wide range of devices for offline usage.
+It doesn't do much that is traditionally web activity but just decrypts a local file containing passwords and acts as standard password manager.
+
+It implements the http://pwsafe.org/[password safe] version 3 database.
