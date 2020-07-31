@@ -1,5 +1,7 @@
 Cargo.lock
+/target
 bin/
 pkg/
-wasm-pack.log
 .idea/
+static/
+wasm-pack.log
