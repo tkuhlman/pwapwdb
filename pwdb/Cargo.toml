@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 chrono = "0.4"
+generic-array = "0.14"
+sha2 = "0.9"
+twofish = "0.4"
