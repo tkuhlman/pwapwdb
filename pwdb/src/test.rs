@@ -20,8 +20,15 @@ fn new_invalid_data() {
     assert_eq!(msg, "Data is not a Password Safe V3 DB")
 }
 
-// TODO get some test DBs and read with
-// use std:fs;
-// fs::read()
+#[test]
+fn decrypt_simple_db() -> Result<(), String> {
+    let encrypted = include_bytes!("../test_dbs/simple.dat");
+
+    let db = Database::new(encrypted.to_vec(), "password")?;
+    // TODO verify contents
+    Ok(())
+}
+
+// TODO test with additional test DBs and read with
 
 // TODO review test coverage
