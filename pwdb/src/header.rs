@@ -11,7 +11,7 @@ pub(super) struct Header {
     // `field:"04"`
     // Timestamps are stored as 32 bit, little endian, unsigned integers,
     //  representing the number of seconds since Midnight, January 1, 1970, GMT
-    last_save: u32,
+    pub(super) last_save: u32,
     // `field:"06"`
     last_save_by: u8,
     // `field:"08"`
@@ -31,4 +31,10 @@ pub(super) struct Header {
     // `field:"01"`
     uuid: [u8; 16],
     version: [u8; 2], // `field:"00"`
+}
+
+impl Header {
+    pub(super) fn new(bytes: Vec<u8>) -> Result<Header, String> {
+        Err("not implemented".to_string())
+    }
 }
