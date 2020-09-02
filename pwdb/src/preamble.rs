@@ -13,7 +13,7 @@ pub(super) struct Preamble {
     ///Random initial value for CBC
     pub(super) cbciv: [u8; 16],
     encryption_key: [u8; 32],
-    hmac_key: [u8; 32],
+    pub(super) hmac_key: [u8; 32],
     //the number of iterations on the hash function to create the stretched key
     iter: u32,
     salt: [u8; 32],

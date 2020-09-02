@@ -57,7 +57,8 @@ pub(super) struct Record {
 impl Record {
     // TODO It would be an interesting learning exercise to implment a serde deserializer for this, see
     // https://serde.rs/impl-deserializer.html
-    pub(super) fn new(bytes: Vec<u8>) -> Result<HashMap<String, Record>, String> {
+    pub(super) fn new(bytes: Vec<u8>) -> Result<(HashMap<String, Record>, Vec<u8>), String> {
+        // TODO bytes should end with the END field type
         Err("not implemented".to_string())
     }
 }

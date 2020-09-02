@@ -1,7 +1,10 @@
 use std::collections::HashMap;
+use std::str;
 
 use block_modes::{BlockMode, Cbc};
 use block_modes::block_padding::NoPadding;
+use hmac::{Hmac, Mac, NewMac};
+use sha2::Sha256;
 use twofish::Twofish;
 
 use header::*;
@@ -13,6 +16,10 @@ mod preamble;
 mod record;
 #[cfg(test)]
 mod test;
+
+const EOF: &str = "PWS3-EOFPWS3-EOF";
+// TODO If this is in a crypto library that would be better than here
+const TWOFISH_BLOCK_SIZE: usize = 16;
 
 // TODO review naming conventions
 // TODO review proper comment style
@@ -38,23 +45,46 @@ impl Database {
 
         let preamble = Preamble::new(Vec::from(&bytes[0..152]), password)?;
 
+        // Find the end of the encrypted section
+        let mut pos = 152;
+        while pos < bytes.len() {
+            if pos + TWOFISH_BLOCK_SIZE > bytes.len() {
+                return Err("Data size does not match expected size for twofish blocks".to_string())
+            }
+            if &bytes[pos..pos + TWOFISH_BLOCK_SIZE] == EOF.as_bytes() {
+                break
+            }
+            pos += TWOFISH_BLOCK_SIZE;
+        }
+        if pos > bytes.len() {
+            return Err("No EOF found in DB".to_string())
+        }
+        let hmac = &bytes[pos + TWOFISH_BLOCK_SIZE..];
+
         // Decrypt the primary block of data
-        // TODO don't panic if this unwraps a failure
         type TwoFishCbc = Cbc<Twofish, NoPadding>;
+        // TODO don't panic if this unwraps a failure
         let cipher = TwoFishCbc::new_var(&preamble.stretched_key, &preamble.cbciv).unwrap();
-        let result = cipher.decrypt_vec(&bytes[152..]);
+        let result = cipher.decrypt_vec(&bytes[152..pos]);
         let data = match result {
             Ok(data) => data,
             Err(error) => return Err(error.to_string()),
         };
 
-        // TODO validate the EOF, should be "PWS3-EOFPWS3-EOF" right before the HMAC and after the records
-        // TODO pull the HMAC (final 256 bits) and compare to a calculated HMAC which is a key hashed MAC using SHA-256 over all unecncrypted data from the start of the header to the EOF
+        // Verify the hmac is as expected, it is calculated only on the plain text fields in the
+        // header and records, not the length/type fields
+        type HmacSha256 = Hmac<Sha256>;
+        let mut mac = HmacSha256::new_varkey(&preamble.hmac_key[..]).expect("Invalid hmac");
 
-        let header = Header::new(data)?;
-        // TODO Header::new needs to return record data so it can be parsed below by record::new
-        let records = Record::new(Vec::from(&bytes[0..152]))?;
+        let (header, header_hmac_data, data) = Header::new(&data)?;
+        mac.update(&header_hmac_data);
         let last_mod = header.last_save;
+
+        let (records, record_hmac_data) = Record::new(data)?;
+        mac.update(&record_hmac_data);
+
+        mac.verify(&hmac).expect("HMAC mismatch!");
+
 
         Ok(Database {
             preamble,

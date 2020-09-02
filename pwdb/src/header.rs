@@ -34,7 +34,8 @@ pub(super) struct Header {
 }
 
 impl Header {
-    pub(super) fn new(bytes: Vec<u8>) -> Result<Header, String> {
+    // Parse the header out of the given data return all bytes after the header end field
+    pub(super) fn new(bytes: &[u8]) -> Result<(Header, Vec<u8>, Vec<u8>), String> {
         Err("not implemented".to_string())
     }
 }
