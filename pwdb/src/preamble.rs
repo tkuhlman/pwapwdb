@@ -1,3 +1,5 @@
+use block_modes::{BlockMode, Ecb};
+use block_modes::block_padding::NoPadding;
 use generic_array::GenericArray;
 use sha2::{Digest, Sha256};
 use twofish::block_cipher::{BlockCipher, NewBlockCipher};
@@ -12,12 +14,12 @@ const SHA256_SIZE: usize = 32;
 pub(super) struct Preamble {
     ///Random initial value for CBC
     pub(super) cbciv: [u8; 16],
-    encryption_key: [u8; 32],
+    pub(super) encryption_key: [u8; 32],
     pub(super) hmac_key: [u8; 32],
     //the number of iterations on the hash function to create the stretched key
     iter: u32,
     salt: [u8; 32],
-    pub(super) stretched_key: [u8; SHA256_SIZE],
+    stretched_key: [u8; SHA256_SIZE],
 }
 
 impl Preamble {
@@ -36,9 +38,9 @@ impl Preamble {
         };
 
         let key_hash = &bytes[40..72];
-        let salt: [u8; 32] = copy_into_array(&bytes[4..36]);
-        let iter = u32::from_le_bytes(copy_into_array(&bytes[36..40]));
-        let cbciv: [u8; 16] = copy_into_array(&bytes[136..152]);
+        let salt: [u8; 32] = crate::copy_into_array(&bytes[4..36]);
+        let iter = u32::from_le_bytes(crate::copy_into_array(&bytes[36..40]));
+        let cbciv: [u8; 16] = crate::copy_into_array(&bytes[136..152]);
 
         let stretched_key = calculate_stretch_key(password, iter, salt);
         if key_hash[..] != Sha256::digest(&stretched_key[..])[..] {
@@ -68,30 +70,13 @@ fn calculate_stretch_key(password: &str, iterations: u32, salt: [u8; 32]) -> [u8
 }
 
 fn extract_keys(data: &[u8], stretched_key: &[u8; 32]) -> ([u8; 32], [u8; 32]) {
+    type TwoFishEcb = Ecb<Twofish, NoPadding>;
     // TODO don't panic if this unwraps a failure
-    let cipher = Twofish::new_varkey(stretched_key).unwrap();
-
+    let cipher = TwoFishEcb::new_var(&stretched_key[..], Default::default()).unwrap();
+    let result = cipher.decrypt_vec(data).unwrap();
     let mut encryption_key = [0u8; 32];
-    encryption_key[..32].copy_from_slice(&data[0..32]);
+    encryption_key[..32].copy_from_slice(&result[0..32]);
     let mut hmac_key = [0u8; 32];
-    hmac_key[..32].copy_from_slice(&data[32..64]);
-    // TODO a better way to do this?
-    cipher.decrypt_block(GenericArray::from_mut_slice(&mut encryption_key[..16]));
-    cipher.decrypt_block(GenericArray::from_mut_slice(&mut encryption_key[16..32]));
-    cipher.decrypt_block(GenericArray::from_mut_slice(&mut hmac_key[..16]));
-    cipher.decrypt_block(GenericArray::from_mut_slice(&mut hmac_key[16..32]));
+    hmac_key[..32].copy_from_slice(&result[32..64]);
     (encryption_key, hmac_key)
-}
-
-// TODO make sure I understand this and try out the try_into variants
-// Also make it so that returns an error rather than panic on failure
-// this code was copied from https://stackoverflow.com/questions/25428920/how-to-get-a-slice-as-an-array-in-rust
-fn copy_into_array<A, T>(slice: &[T]) -> A
-    where
-        A: Default + AsMut<[T]>,
-        T: Copy,
-{
-    let mut a = A::default();
-    <A as AsMut<[T]>>::as_mut(&mut a).copy_from_slice(slice);
-    a
 }

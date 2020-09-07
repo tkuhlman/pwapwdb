@@ -21,6 +21,18 @@ fn new_invalid_data() {
 }
 
 #[test]
+fn wrong_passphrase() {
+    let encrypted = include_bytes!("../test_dbs/simple.dat");
+
+    let db = Database::new(encrypted.to_vec(), "wrong");
+    let msg = match db {
+        Ok(_) => "success".to_string(),
+        Err(error) => error,
+    };
+    assert_eq!(msg, "Invalid Password")
+}
+
+#[test]
 fn decrypt_simple_db() -> Result<(), String> {
     let encrypted = include_bytes!("../test_dbs/simple.dat");
 

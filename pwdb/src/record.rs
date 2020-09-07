@@ -1,18 +1,15 @@
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Default, Debug)]
 pub(super) struct Record {
-    // TODO investigate DateTime serialization, https://serde.rs/custom-date-format.html
-    // access_time: DateTime<Utc>, DateTime does not implement Serialize
     // `field:"09"`
-    access_time: u32,
+    access_time: Option<DateTime<Utc>>,
     // `field:"0e"`
     autotype: String,
-    // DateTime does not implement Serialize
     // `field:"07"`
-    create_time: u32,
+    create_time: Option<DateTime<Utc>>,
     // `field:"13"`
     double_click_action: [u8; 2],
     // `field:"14"`
@@ -21,7 +18,7 @@ pub(super) struct Record {
     group: String,
     // DateTime does not implement Serialize
     // `field:"0c"`
-    mod_time: u32,
+    mod_time: Option<DateTime<Utc>>,
     // `field:"05"`
     notes: String,
     // `field:"06"`
@@ -55,9 +52,9 @@ pub(super) struct Record {
 }
 
 impl Record {
-    // TODO It would be an interesting learning exercise to implment a serde deserializer for this, see
-    // https://serde.rs/impl-deserializer.html
-    pub(super) fn new(bytes: Vec<u8>) -> Result<(HashMap<String, Record>, Vec<u8>), String> {
+    // New Parses a set of records from the given data. As data is parsed out the mac is updated with
+    // the string values of the records.
+    pub(super) fn new(bytes: &[u8], mac: &mut crate::HmacSha256) -> Result<HashMap<String, Record>, String> {
         // TODO bytes should end with the END field type
         Err("not implemented".to_string())
     }

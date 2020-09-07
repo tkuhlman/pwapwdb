@@ -1,8 +1,11 @@
 use std::collections::HashMap;
+use std::path::Path;
 use std::str;
+use std::time;
 
 use block_modes::{BlockMode, Cbc};
 use block_modes::block_padding::NoPadding;
+use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac, NewMac};
 use sha2::Sha256;
 use twofish::Twofish;
@@ -21,6 +24,8 @@ const EOF: &str = "PWS3-EOFPWS3-EOF";
 // TODO If this is in a crypto library that would be better than here
 const TWOFISH_BLOCK_SIZE: usize = 16;
 
+type HmacSha256 = Hmac<Sha256>;
+
 // TODO review naming conventions
 // TODO review proper comment style
 // Database is the decrypted password DB which can be queried for Record information
@@ -30,7 +35,7 @@ pub struct Database {
     preamble: Preamble,
     header: Header,
     // Last update to the DB records, independent than the last save timestamp in the header
-    last_mod: u32,
+    last_mod: DateTime<Utc>,
     //the key is the record title
     records: HashMap<String, Record>,
 }
@@ -64,7 +69,7 @@ impl Database {
         // Decrypt the primary block of data
         type TwoFishCbc = Cbc<Twofish, NoPadding>;
         // TODO don't panic if this unwraps a failure
-        let cipher = TwoFishCbc::new_var(&preamble.stretched_key, &preamble.cbciv).unwrap();
+        let cipher = TwoFishCbc::new_var(&preamble.encryption_key, &preamble.cbciv).unwrap();
         let result = cipher.decrypt_vec(&bytes[152..pos]);
         let data = match result {
             Ok(data) => data,
@@ -73,18 +78,17 @@ impl Database {
 
         // Verify the hmac is as expected, it is calculated only on the plain text fields in the
         // header and records, not the length/type fields
-        type HmacSha256 = Hmac<Sha256>;
         let mut mac = HmacSha256::new_varkey(&preamble.hmac_key[..]).expect("Invalid hmac");
 
-        let (header, header_hmac_data, data) = Header::new(&data)?;
-        mac.update(&header_hmac_data);
-        let last_mod = header.last_save;
+        let (header, data) = Header::new(&data, &mut mac)?;
+        let mut last_mod = DateTime::<Utc>::from(time::SystemTime::now());
+        if let Some(save_date) = header.last_save {
+            last_mod = save_date;
+        }
 
-        let (records, record_hmac_data) = Record::new(data)?;
-        mac.update(&record_hmac_data);
+        let records = Record::new(&data, &mut mac)?;
 
         mac.verify(&hmac).expect("HMAC mismatch!");
-
 
         Ok(Database {
             preamble,
@@ -93,4 +97,47 @@ impl Database {
             records,
         })
     }
+}
+
+// Field represents a header or record field used in the database.
+struct Field {
+    total_size: usize,
+    // this is a multiplier of the block size
+    type_id: u8,
+    data: Vec<u8>,
+}
+
+impl Field {
+    // new parses a field from the given bytes assuming a Twofish block size
+    fn new(bytes: &[u8]) -> Result<Field, String> {
+        let size = u32::from_le_bytes(copy_into_array(&bytes[..4])) as usize;
+        let mut total_size = 5 + size;
+        let remainder = total_size % TWOFISH_BLOCK_SIZE;
+        if remainder != 0 {
+            total_size += TWOFISH_BLOCK_SIZE - remainder;
+        }
+
+        if total_size > bytes.len() + 1 {
+            return Err(format!("Data length of field {} is larger than the byte slice length {}", total_size, bytes.len()))
+        }
+
+        Ok(Field {
+            data: bytes[5..5 + size].to_vec(),
+            total_size,
+            type_id: bytes[4],
+        })
+    }
+}
+
+// TODO make sure I understand this and try out the try_into variants
+// Also make it so that returns an error rather than panic on failure
+// this code was copied from https://stackoverflow.com/questions/25428920/how-to-get-a-slice-as-an-array-in-rust
+fn copy_into_array<A, T>(slice: &[T]) -> A
+    where
+        A: Default + AsMut<[T]>,
+        T: Copy,
+{
+    let mut a = A::default();
+    <A as AsMut<[T]>>::as_mut(&mut a).copy_from_slice(slice);
+    a
 }
