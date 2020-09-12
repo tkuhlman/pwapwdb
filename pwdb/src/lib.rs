@@ -87,7 +87,9 @@ impl Database {
 
         let records = Record::new_records(&data, &mut mac)?;
 
-        mac.verify(&hmac).expect("HMAC mismatch!");
+        if let Err(_) = mac.verify(&hmac) {
+            return Err("HMAC mismatch!".to_string())
+        }
 
         Ok(Database {
             preamble,

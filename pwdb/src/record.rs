@@ -8,9 +8,14 @@ pub struct Record {
     pub access_time: Option<DateTime<Utc>>,
     autotype: String,
     pub create_time: Option<DateTime<Utc>>,
+    credit_card_expiration: String,
+    credit_card_number: String,
+    credit_card_pin: String,
+    credit_card_verify: String,
     double_click_action: [u8; 2],
     pub email: String,
     pub group: String,
+    keyboard_shortcut: [u8; 4],
     pub mod_time: Option<DateTime<Utc>>,
     pub notes: String,
     pub password: String,
@@ -21,10 +26,13 @@ pub struct Record {
     password_mod_time: Option<DateTime<Utc>>,
     password_policy: String,
     password_policy_name: String,
+    password_symbols: String,
     protected_entry: u8,
+    qr_code: String,
     run_command: String,
     shift_double_click_action: [u8; 2],
     pub title: String,
+    two_factor_key: Vec<u8>,
     pub username: String,
     pub url: String,
     uuid: uuid::Uuid,
@@ -96,8 +104,42 @@ impl Record {
                 0x10 => r.password_policy = String::from_utf8(
                     field.data.clone()
                 ).expect("Failed to convert password policy field to a string"),
-                // TODO add support for remaining fields
-                _ => return Err("Unknown record field type".to_string()),
+                0x11 => r.password_expiry_interval = crate::copy_into_array(&field.data[..4]),
+                0x12 => r.run_command = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert run command field to a string"),
+                0x13 => r.double_click_action = crate::copy_into_array(&field.data[..2]),
+                0x14 => r.email = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert email field to a string"),
+                0x15 => r.protected_entry = field.data[0],
+                0x16 => r.password_symbols = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert password symbols field to a string"),
+                0x17 => r.shift_double_click_action = crate::copy_into_array(&field.data[..2]),
+                0x18 => r.password_policy_name = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert password policy name field to a string"),
+                0x19 => r.keyboard_shortcut = crate::copy_into_array(&field.data[..4]),
+                0x1a => continue,
+                0x1b => r.two_factor_key = field.data.clone(),
+                0x1c => r.credit_card_number = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert credit card number field to a string"),
+                0x1d => r.credit_card_expiration = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert credit card expiration field to a string"),
+                0x1e => r.credit_card_verify = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert credit card verify field to a string"),
+                0x1f => r.credit_card_pin = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert credit card pin field to a string"),
+                0x20 => r.qr_code = String::from_utf8(
+                    field.data.clone()
+                ).expect("Failed to convert QR code field to a string"),
+                0xff => break,
+                _ => return Err(format!("Unknown record field type {}", field.type_id)),
             }
 
             // For every field except end add the data to the hmac
