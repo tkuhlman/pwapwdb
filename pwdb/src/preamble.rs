@@ -1,8 +1,6 @@
 use block_modes::{BlockMode, Ecb};
 use block_modes::block_padding::NoPadding;
-use generic_array::GenericArray;
 use sha2::{Digest, Sha256};
-use twofish::block_cipher::{BlockCipher, NewBlockCipher};
 use twofish::Twofish;
 
 // TODO If this is in a crypto library that would be better than here

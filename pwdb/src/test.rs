@@ -37,10 +37,12 @@ fn decrypt_simple_db() -> Result<(), String> {
     let encrypted = include_bytes!("../test_dbs/simple.dat");
 
     let db = Database::new(encrypted.to_vec(), "password")?;
-    // TODO verify contents
+    assert_eq!(db.records.len(), 1);
+    let (_key, record) = db.records.iter().next().unwrap();
+    assert_eq!(record.title, "Test entry");
     Ok(())
 }
 
-// TODO test with additional test DBs and read with
+// TODO test with additional test DBs
 
 // TODO review test coverage

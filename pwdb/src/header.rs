@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use hmac::Mac;
 
 #[derive(Default, Debug)]
@@ -58,15 +58,7 @@ impl Header {
                 0x03 => hdr.tree_display_status = String::from_utf8(
                     field.data.clone()
                 ).expect("Failed to convert tree display status to a string"),
-                0x04 => {
-                    if field.data.len() != 4 {
-                        return Err("Unexpected field length for last save date".to_string())
-                    }
-                    hdr.last_save = Some(DateTime::from_utc(
-                        NaiveDateTime::from_timestamp(
-                            u32::from_le_bytes(crate::copy_into_array(&field.data)) as i64, 0,
-                        ), Utc));
-                },
+                0x04 => hdr.last_save = Some(crate::pwsafe_date(&field.data)?),
                 0x05 => continue, // deprecated field, just drop it
                 0x06 => hdr.last_save_by = String::from_utf8(
                     field.data.clone()
@@ -98,15 +90,7 @@ impl Header {
                 0x12 => hdr.yubico = String::from_utf8(
                     field.data.clone()
                 ).expect("Failed to convert yubico field to a string"),
-                0x13 => {
-                    if field.data.len() != 4 {
-                        return Err("Unexpected field length for last master password update".to_string())
-                    }
-                    hdr.last_save = Some(DateTime::from_utc(
-                        NaiveDateTime::from_timestamp(
-                            u32::from_le_bytes(crate::copy_into_array(&field.data)) as i64, 0,
-                        ), Utc));
-                },
+                0x13 => hdr.last_master_password_update = Some(crate::pwsafe_date(&field.data)?),
                 0xff => break,
                 _ => return Err("Unknown header field type".to_string()),
             }

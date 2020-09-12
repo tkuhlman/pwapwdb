@@ -1,11 +1,10 @@
 use std::collections::HashMap;
-use std::path::Path;
 use std::str;
 use std::time;
 
 use block_modes::{BlockMode, Cbc};
 use block_modes::block_padding::NoPadding;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use hmac::{Hmac, Mac, NewMac};
 use sha2::Sha256;
 use twofish::Twofish;
@@ -37,7 +36,7 @@ pub struct Database {
     // Last update to the DB records, independent than the last save timestamp in the header
     last_mod: DateTime<Utc>,
     //the key is the record title
-    records: HashMap<String, Record>,
+    records: HashMap<uuid::Uuid, Record>,
 }
 
 impl Database {
@@ -86,7 +85,7 @@ impl Database {
             last_mod = save_date;
         }
 
-        let records = Record::new(&data, &mut mac)?;
+        let records = Record::new_records(&data, &mut mac)?;
 
         mac.verify(&hmac).expect("HMAC mismatch!");
 
@@ -140,4 +139,14 @@ fn copy_into_array<A, T>(slice: &[T]) -> A
     let mut a = A::default();
     <A as AsMut<[T]>>::as_mut(&mut a).copy_from_slice(slice);
     a
+}
+
+fn pwsafe_date(bytes: &Vec<u8>) -> Result<DateTime<Utc>, String> {
+    if bytes.len() != 4 {
+        return Err("Unexpected field length for last master password update".to_string())
+    }
+    Ok(DateTime::from_utc(
+        NaiveDateTime::from_timestamp(
+            u32::from_le_bytes(crate::copy_into_array(&bytes)) as i64, 0,
+        ), Utc))
 }
