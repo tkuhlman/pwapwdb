@@ -2,8 +2,8 @@ use chrono::{DateTime, Utc};
 use hmac::Mac;
 
 #[derive(Default, Debug)]
-pub(super) struct Header {
-    description: String,
+pub struct Header {
+    pub description: String,
     empty_groups: String,
     filters: String,
     last_master_password_update: Option<DateTime<Utc>>,
@@ -11,7 +11,7 @@ pub(super) struct Header {
     last_save_by: String,
     last_save_host: String,
     last_save_user: String,
-    name: String,
+    pub name: String,
     password_policy: String,
     preferences: String,
     recently_used: String,

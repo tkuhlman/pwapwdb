@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::str;
-use std::time;
 
 use block_modes::{BlockMode, Cbc};
 use block_modes::block_padding::NoPadding;
@@ -32,7 +31,7 @@ type HmacSha256 = Hmac<Sha256>;
 pub struct Database {
     // The preamble is the non-encrypted data in the DB file
     preamble: Preamble,
-    header: Header,
+    pub header: Header,
     // Last update to the DB records, independent than the last save timestamp in the header
     last_mod: DateTime<Utc>,
     //the key is the record title
@@ -80,10 +79,10 @@ impl Database {
         let mut mac = HmacSha256::new_varkey(&preamble.hmac_key[..]).expect("Invalid hmac");
 
         let (header, data) = Header::new(&data, &mut mac)?;
-        let mut last_mod = DateTime::<Utc>::from(time::SystemTime::now());
-        if let Some(save_date) = header.last_save {
-            last_mod = save_date;
-        }
+        let last_mod = match header.last_save {
+            Some(save_date) => save_date,
+            None => return Err("missing last_save date".to_string()),
+        };
 
         let records = Record::new_records(&data, &mut mac)?;
 

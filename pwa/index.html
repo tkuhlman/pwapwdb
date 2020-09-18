@@ -7,25 +7,61 @@
     <meta name="description" content="Progressive Web App password DB"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="theme-color" content="#2F3BA2"/>
-    <title>password DB</title>
-
-    <script type="module">
-        import init from "./static/wasm.js"
-        init()
-    </script>
+    <title>Password DB</title>
 </head>
 <body>
+<script type="module">
+        import init, {open_db} from "./static/wasm.js";
+        init();
+
+        // Opening a file must be done via a secure context (basically https or from localhost),
+        // must be user initiated (like with this click)
+        // Also when running from localhost the chrome flag for native filesystem api must be enabled (at least as of Chrome 84)
+        const butOpenFile = document.getElementById('OpenFile');
+        let fileHandle;
+        butOpenFile.addEventListener('click', async (e) => {
+            // TODO I need a better error message when the chooseFileSystemEntries function doesn't exist because of the security issues above
+            fileHandle = await window.chooseFileSystemEntries();
+            const file = await fileHandle.getFile();
+            const contents = await file.arrayBuffer();
+            // Call into the wasm with this data
+            open_db(contents, "password");
+        });
+
+        // TODO This function is what writing to a file looks like though I have not hooked it up to anything
+        // Get a filename for saving
+        async function getNewFileHandle() {
+          const opts = {
+            type: 'save-file',
+          };
+          const handle = await window.chooseFileSystemEntries(opts);
+          return handle;
+        }
+        async function writeFile(fileHandle, contents) {
+          // Create a FileSystemWritableFileStream to write to.
+          const writable = await fileHandle.createWritable();
+          // Write the contents of the file to the stream.
+          await writable.write(contents);
+          // Close the file and write the contents to disk.
+          await writable.close();
+        }
+
+</script>
 <!-- Services Worker to enable offline usage -->
 <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then((reg) => {
-              console.log('Service worker registered.', reg);
-            });
-      });
-    }
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then((reg) => {
+                  console.log('Service worker registered.', reg);
+                });
+          });
+        }
+
 </script>
+
+<button type="button" id="OpenFile">Open Password DB File</button>
+<div id="PasswordDB"><!-- Populated by wasm --></div>
 </body>
 </html>
 

@@ -38,6 +38,9 @@ impl Preamble {
         let key_hash = &bytes[40..72];
         let salt: [u8; 32] = crate::copy_into_array(&bytes[4..36]);
         let iter = u32::from_le_bytes(crate::copy_into_array(&bytes[36..40]));
+        if iter > 10000 {
+            return Err(format!("hash function iterations seems excessive: {}", iter).to_string());
+        }
         let cbciv: [u8; 16] = crate::copy_into_array(&bytes[136..152]);
 
         let stretched_key = calculate_stretch_key(password, iter, salt);
