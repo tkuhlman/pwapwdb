@@ -23,13 +23,10 @@ pub enum Msg {
 }
 
 struct PasswordDB {
-    link: ComponentLink<Self>,
     db: Option<pwdb::Database>,
+    link: ComponentLink<Self>,
 }
 
-// TODO figure out how to set this as as the value in the component
-//    pub fn open_db(&mut self, val: JsValue, password: &str) {
-// TODO also prompt for a password
 #[wasm_bindgen]
 pub fn open_db(val: JsValue, password: &str) {
     let contents: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(val) {

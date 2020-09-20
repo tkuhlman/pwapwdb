@@ -17,15 +17,21 @@
         // Opening a file must be done via a secure context (basically https or from localhost),
         // must be user initiated (like with this click)
         // Also when running from localhost the chrome flag for native filesystem api must be enabled (at least as of Chrome 84)
-        const butOpenFile = document.getElementById('OpenFile');
-        let fileHandle;
-        butOpenFile.addEventListener('click', async (e) => {
+        async function open_file() {
+            let fileHandle;
             // TODO I need a better error message when the chooseFileSystemEntries function doesn't exist because of the security issues above
             fileHandle = await window.chooseFileSystemEntries();
             const file = await fileHandle.getFile();
-            const contents = await file.arrayBuffer();
+            var contents = await file.arrayBuffer();
+            return contents;
+        }
+
+        const butOpenFile = document.getElementById('OpenFile');
+        butOpenFile.addEventListener('click', async (e) => {
+            const contents = await open_file();
+            const password = document.getElementById('Password');
             // Call into the wasm with this data
-            open_db(contents, "password");
+            open_db(contents, password.value);
         });
 
         // TODO This function is what writing to a file looks like though I have not hooked it up to anything
@@ -58,9 +64,11 @@
           });
         }
 
+
 </script>
 
 <button type="button" id="OpenFile">Open Password DB File</button>
+Password: <input type="password" id="Password"></input>
 <div id="PasswordDB"><!-- Populated by wasm --></div>
 </body>
 </html>
