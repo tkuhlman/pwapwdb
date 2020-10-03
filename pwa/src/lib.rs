@@ -8,6 +8,7 @@ use yew::prelude::*;
 #[wasm_bindgen]
 extern "C" {
     fn alert(s: &str);
+    fn open(payload: JsValue);
 }
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
@@ -19,31 +20,13 @@ macro_rules! log {
 
 // TODO - setup icons, see manifest.json, also add to the service worker cache list
 pub enum Msg {
-    Update(JsValue),
+    OpenDB,
+    UnencryptedDB(JsValue),
 }
 
 struct PasswordDB {
     db: Option<pwdb::Database>,
     link: ComponentLink<Self>,
-}
-
-#[wasm_bindgen]
-pub fn open_db(val: JsValue, password: &str) {
-    let contents: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(val) {
-        Ok(value) => value,
-        Err(msg) => {
-            alert(&*format!("Failed reading Password DB file {}", msg));
-            return;
-        }
-    };
-    match pwdb::Database::new(contents.into_vec(), password) {
-        Ok(db) => {
-            log!("Opened DB named {}", db.header.name);
-        }
-        Err(msg) => {
-            alert(&*msg);
-        }
-    }
 }
 
 impl Component for PasswordDB {
@@ -58,16 +41,26 @@ impl Component for PasswordDB {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::Update(val) => {
-                let contents = match val.as_string() {
-                    Some(value) => value,
-                    None => {
-                        alert("Empty Password DB");
-                        return false;
-                    }
-                };
-                let db = pwdb::Database::new(Vec::from(contents), "password").unwrap();
-                self.db = Some(db);
+            Msg::UnencryptedDB(contents) => {
+                // TODO read password value
+                //    const password = document.getElementById('Password');
+                // to something like
+                //  let window = web_sys::window().expect("no global `window` exists");
+                //  let document = window.document().expect("should have a document on window");
+                //  let body = document.body().expect("document should have a body");
+                //  let pwfield = body.children().get_with_name("Password").expect("body is missing PassworDB child");
+                let pw = "password"; // TODO read from text field or better yet prompt
+                self.db = open_db(contents, pw);
+            },
+            Msg::OpenDB => {
+                // The Javascript functions to open a file are asynchronous. Neither Javascript nor
+                // WASM have multiple threads so I can't block waiting for that asynchronous function
+                // to return and instead need to have a callback.
+                let callback = self.link.callback(Msg::UnencryptedDB);
+                open(Closure::once_into_js(move |payload: JsValue| {
+                    callback.emit(payload)
+                }));
+                return false
             },
         }
         true
@@ -83,9 +76,31 @@ impl Component for PasswordDB {
     fn view(&self) -> Html {
         html! {
             <>
-                <textarea></textarea>
+                <button type="button" id="OpenFile" onclick=self.link.callback(|_| Msg::OpenDB)>{"Open Password DB File"}</button>
+                {"Password:"}<input type="password" id="Password"/>
             </>
         }
+    }
+}
+
+// open_db opens DB given the encrypted bytes as JsValue
+fn open_db(val: JsValue, password: &str) -> Option<pwdb::Database> {
+    let contents: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(val) {
+        Ok(value) => value,
+        Err(msg) => {
+            alert(&*format!("Failed reading Password DB file {}", msg));
+            return None;
+        }
+    };
+    match pwdb::Database::new(contents.into_vec(), password) {
+        Ok(db) => {
+            log!("Opened DB named {}", db.header.name);
+            Some(db)
+        },
+        Err(msg) => {
+            alert(&*format!("failed opening DB: {}", msg));
+            None
+        },
     }
 }
 
@@ -96,9 +111,13 @@ pub fn run_app() {
 
     // TODO Change the .expect to alerts
     let window = web_sys::window().expect("no global `window` exists");
+// TODO consider opening a new window after the DB opens and make it more app like
+//    let window = window.open().expect("failed to open new window");
+
     let document = window.document().expect("should have a document on window");
     let body = document.body().expect("document should have a body");
     let div = body.children().get_with_name("PasswordDB").expect("body is missing PassworDB child");
 
     App::<PasswordDB>::new().mount(div);
 }
+
