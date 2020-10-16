@@ -42,15 +42,24 @@ impl Component for PasswordDB {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::UnencryptedDB(contents) => {
-                // TODO read password value
-                //    const password = document.getElementById('Password');
-                // to something like
-                //  let window = web_sys::window().expect("no global `window` exists");
-                //  let document = window.document().expect("should have a document on window");
-                //  let body = document.body().expect("document should have a body");
-                //  let pwfield = body.children().get_with_name("Password").expect("body is missing PassworDB child");
-                let pw = "password"; // TODO read from text field or better yet prompt
-                self.db = open_db(contents, pw);
+                let window = web_sys::window().expect("no global `window` exists");
+                let pw = match window.prompt_with_message("Password:") {
+                    Ok(resp) => {
+                        match resp {
+                            Some(pw) => pw,
+                            None => {
+                                alert("A password is requried to open a Password DB");
+                                return false
+                            }
+                        }
+                    },
+                    Err(e) => {
+                        alert(&*format!("{:#?}", e));
+                        return false
+                    }
+                };
+
+                self.db = open_db(contents, &pw);
             },
             Msg::OpenDB => {
                 // The Javascript functions to open a file are asynchronous. Neither Javascript nor
@@ -74,11 +83,18 @@ impl Component for PasswordDB {
     }
 
     fn view(&self) -> Html {
-        html! {
-            <>
-                <button type="button" id="OpenFile" onclick=self.link.callback(|_| Msg::OpenDB)>{"Open Password DB File"}</button>
-                {"Password:"}<input type="password" id="Password"/>
-            </>
+        match &self.db {
+            None => html! {
+                <>
+                    <button type="button" id="OpenFile" onclick=self.link.callback(|_| Msg::OpenDB)>{"Open Password DB File"}</button>
+                </>
+            },
+            Some(db) => html! {
+                <>
+                    <h1>{format!("Password DB {}", db.header.name)}</h1>
+                    // TODO flesh out
+                </>
+            }
         }
     }
 }
