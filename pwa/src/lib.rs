@@ -18,7 +18,6 @@ macro_rules! log {
     }
 }
 
-// TODO - setup icons, see manifest.json, also add to the service worker cache list
 pub enum Msg {
     OpenDB,
     UnencryptedDB(JsValue),
@@ -147,14 +146,10 @@ pub fn run_app() {
     // enable improved panic error messages
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    // TODO Change the .expect to alerts
     let window = web_sys::window().expect("no global `window` exists");
-// TODO consider opening a new window after the DB opens and make it more app like
-//    let window = window.open().expect("failed to open new window");
-
     let document = window.document().expect("should have a document on window");
     let body = document.body().expect("document should have a body");
-    let div = body.children().get_with_name("PasswordDB").expect("body is missing PassworDB child");
+    let div = body.children().get_with_name("PasswordDB").expect("body is missing PasswordDB child");
 
     App::<PasswordDB>::new().mount(div);
 }

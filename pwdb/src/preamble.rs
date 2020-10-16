@@ -72,7 +72,6 @@ fn calculate_stretch_key(password: &str, iterations: u32, salt: [u8; 32]) -> [u8
 
 fn extract_keys(data: &[u8], stretched_key: &[u8; 32]) -> ([u8; 32], [u8; 32]) {
     type TwoFishEcb = Ecb<Twofish, NoPadding>;
-    // TODO don't panic if this unwraps a failure
     let cipher = TwoFishEcb::new_var(&stretched_key[..], Default::default()).unwrap();
     let result = cipher.decrypt_vec(data).unwrap();
     let mut encryption_key = [0u8; 32];

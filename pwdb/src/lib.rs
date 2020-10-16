@@ -66,7 +66,6 @@ impl Database {
 
         // Decrypt the primary block of data
         type TwoFishCbc = Cbc<Twofish, NoPadding>;
-        // TODO don't panic if this unwraps a failure
         let cipher = TwoFishCbc::new_var(&preamble.encryption_key, &preamble.cbciv).unwrap();
         let result = cipher.decrypt_vec(&bytes[152..pos]);
         let data = match result {
