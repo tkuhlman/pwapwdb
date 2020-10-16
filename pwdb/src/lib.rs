@@ -14,7 +14,7 @@ use record::*;
 
 mod header;
 mod preamble;
-mod record;
+pub mod record;
 #[cfg(test)]
 mod test;
 
@@ -35,7 +35,7 @@ pub struct Database {
     // Last update to the DB records, independent than the last save timestamp in the header
     last_mod: DateTime<Utc>,
     //the key is the record title
-    records: HashMap<uuid::Uuid, Record>,
+    pub records: HashMap<uuid::Uuid, Record>,
 }
 
 impl Database {

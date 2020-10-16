@@ -14,6 +14,7 @@ console_error_panic_hook = "0.1.6"
 pwdb = { path = "../pwdb" }
 serde_bytes = "0.11"
 serde-wasm-bindgen = "0.1"
+uuid = { version = "0.8", features = ["v4"] }
 wasm-bindgen = "0.2"
 yew = "0.17"
 

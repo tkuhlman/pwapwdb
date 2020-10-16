@@ -43,6 +43,7 @@ impl Component for PasswordDB {
         match msg {
             Msg::UnencryptedDB(contents) => {
                 let window = web_sys::window().expect("no global `window` exists");
+                // TODO Ideally I need this to mask the password which probably means not using this type of prompt
                 let pw = match window.prompt_with_message("Password:") {
                     Ok(resp) => {
                         match resp {
@@ -83,6 +84,18 @@ impl Component for PasswordDB {
     }
 
     fn view(&self) -> Html {
+        let render_record = |(_uuid, record): (&uuid::Uuid, &pwdb::record::Record)| {
+            html! {
+                <tr>
+                    <td>{&record.group}</td>
+                    <td>{&record.title}</td>
+                    <td>{&record.username}</td>
+                    <td>{&record.url}</td>
+                    <td>{&record.notes}</td>
+                </tr>
+            }
+        };
+
         match &self.db {
             None => html! {
                 <>
@@ -92,7 +105,16 @@ impl Component for PasswordDB {
             Some(db) => html! {
                 <>
                     <h1>{format!("Password DB {}", db.header.name)}</h1>
-                    // TODO flesh out
+                    <table>
+                        <tr>
+                            <th>{"Group"}</th>
+                            <th>{"Title"}</th>
+                            <th>{"Username"}</th>
+                            <th>{"URL"}</th>
+                            <th>{"Notes"}</th>
+                        </tr>
+                    { for db.records.iter().map(render_record) }
+                    </table>
                 </>
             }
         }
