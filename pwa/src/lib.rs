@@ -4,18 +4,11 @@ use std::panic;
 
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
+use yew::services::{ConsoleService, DialogService};
 
 #[wasm_bindgen]
 extern "C" {
-    fn alert(s: &str);
     fn open(payload: JsValue);
-}
-
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
 }
 
 pub enum Msg {
@@ -33,8 +26,8 @@ impl Component for PasswordDB {
     type Properties = ();
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
-            link,
             db: None,
+            link,
         }
     }
 
@@ -48,13 +41,13 @@ impl Component for PasswordDB {
                         match resp {
                             Some(pw) => pw,
                             None => {
-                                alert("A password is requried to open a Password DB");
+                                DialogService::alert("A password is required to open a Password DB");
                                 return false
                             }
                         }
                     },
                     Err(e) => {
-                        alert(&*format!("{:#?}", e));
+                        DialogService::alert(&format!("{:#?}", e));
                         return false
                     }
                 };
@@ -125,17 +118,17 @@ fn open_db(val: JsValue, password: &str) -> Option<pwdb::Database> {
     let contents: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(val) {
         Ok(value) => value,
         Err(msg) => {
-            alert(&*format!("Failed reading Password DB file {}", msg));
+            DialogService::alert(&format!("Failed decoding Password DB file {}", msg));
             return None;
         }
     };
     match pwdb::Database::new(contents.into_vec(), password) {
         Ok(db) => {
-            log!("Opened DB named {}", db.header.name);
+            ConsoleService::info(&format!("Opened DB named {}", db.header.name));
             Some(db)
         },
         Err(msg) => {
-            alert(&*format!("failed opening DB: {}", msg));
+            DialogService::alert(&format!("failed opening DB: {}", msg));
             None
         },
     }
@@ -153,4 +146,3 @@ pub fn run_app() {
 
     App::<PasswordDB>::new().mount(div);
 }
-

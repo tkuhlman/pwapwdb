@@ -21,7 +21,6 @@ yew = "0.17"
 [dependencies.web-sys]
 version = "0.3.4"
 features = [
-    'console',
     'Document',
     'Element',
     'HtmlCollection',
