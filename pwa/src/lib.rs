@@ -76,12 +76,14 @@ impl Component for PasswordDB {
     }
 
     fn view(&self) -> Html {
+        // TODO make a component for the full record data which can be opened from each line
         let render_record = |(_uuid, record): (&uuid::Uuid, &pwdb::record::Record)| {
             html! {
                 <tr>
                     <td>{&record.group}</td>
                     <td>{&record.title}</td>
                     <td>{&record.username}</td>
+                    <td><input type="password" onClick="toggleVisibility(this)" readonly=true value={&record.password} /></td>
                     <td>{&record.url}</td>
                     <td>{&record.notes}</td>
                 </tr>
@@ -95,6 +97,7 @@ impl Component for PasswordDB {
                 </>
             },
             Some(db) => html! {
+            // TODO organize in tree hierarchy by group
                 <>
                     <h1>{format!("Password DB {}", db.header.name)}</h1>
                     <table>
@@ -102,6 +105,7 @@ impl Component for PasswordDB {
                             <th>{"Group"}</th>
                             <th>{"Title"}</th>
                             <th>{"Username"}</th>
+                            <th>{"Password"}</th>
                             <th>{"URL"}</th>
                             <th>{"Notes"}</th>
                         </tr>

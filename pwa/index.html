@@ -35,6 +35,14 @@
         return file.arrayBuffer();
     }
 
+    function toggleVisibility(el) {
+        if (el.type === "password") {
+            el.type = "text";
+        } else {
+            el.type = "password";
+        }
+    }
+
     // TODO This function is what writing to a file looks like though I have not hooked it up to anything
     // Get a filename for saving
     async function getNewFileHandle() {
