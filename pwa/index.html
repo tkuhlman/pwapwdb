@@ -30,7 +30,7 @@
     async function read_file() {
         let fileHandle;
         // TODO I need a better error message when the chooseFileSystemEntries function doesn't exist because of the security issues above
-        fileHandle = await window.chooseFileSystemEntries();
+        [fileHandle] = await window.showOpenFilePicker();
         const file = await fileHandle.getFile();
         return file.arrayBuffer();
     }
