@@ -27,13 +27,13 @@ self.addEventListener('install', (evt) => {
 
 self.addEventListener('activate', (evt) => {
   evt.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(keyList.map((key) => {
-        if (key !== CACHE_NAME) {
-          return caches.delete(key);
-        }
-      }));
-    })
+    (async () => {
+      // Enable navigation preload if it's supported.
+      // See https://developers.google.com/web/updates/2017/02/navigation-preload
+      if ("navigationPreload" in self.registration) {
+        await self.registration.navigationPreload.enable();
+      }
+    })()
   );
 
   self.clients.claim();
@@ -45,10 +45,29 @@ self.addEventListener('fetch', (evt) => {
     return;
   }
   evt.respondWith(
-    fetch(evt.request).catch(() => {
-      return caches.open(CACHE_NAME).then((cache) => {
-        return cache.match('./index.html');
-      });
-    })
+    (async () => {
+      try {
+        // First, try to use the navigation preload response if it's supported.
+        const preloadResponse = await evt.preloadResponse;
+        if (preloadResponse) {
+          return preloadResponse;
+        }
+
+        // Always try the network first.
+        const networkResponse = await fetch(evt.request);
+        return networkResponse;
+      } catch (error) {
+        // catch is only triggered if an exception is thrown, which is likely
+        // due to a network error.
+        // If fetch() returns a valid HTTP response with a response code in
+        // the 4xx or 5xx range, the catch() will NOT be called.
+        console.log("Fetch failed; returning offline page instead.", error);
+
+        const cache = await caches.open(CACHE_NAME);
+//        const cachedResponse = await cache.match('./index.html');
+        const cachedResponse = await cache.match(evt.request);
+        return cachedResponse;
+      }
+    })()
   );
 });
