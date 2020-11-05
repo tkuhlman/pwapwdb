@@ -1,0 +1,52 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types:
+      - created
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: jetli/wasm-pack-action@v0.3.0
+        with:
+          version: 'latest'
+      - name: Build wasm
+        run: wasm-pack build --target web --out-name wasm --out-dir ./static
+        working-directory: pwa
+      - run: mkdir build && cp -r pwa/*.html pwa/*.js pwa/manifest.json pwa/icons pwa/static build/
+      - name: Archive site build
+        uses: actions/upload-artifact@v2
+        with:
+          name: site-build
+          path: build
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download site-build
+        uses: actions/download-artifact@v2
+        with:
+          name: site-build
+          path: build
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: build
+          CLEAN: true
