@@ -1,0 +1,78 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+    <meta charset="utf-8"/>
+    <link rel="manifest" href="/manifest.json"/>
+    <link rel="icon" type="image/png" href="/icons/lock-256x256.png" sizes="256x256">
+    <meta name="description" content="Progressive Web App password DB"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#2F3BA2"/>
+    <title>Password DB</title>
+</head>
+<script type="module">
+    import init from "./static/wasm.js";
+    init();
+</script>
+<script>
+    // Opening a user selected file is done in a Javascript function. WASM doesn't have blockable
+    // threads so I wrap the async function with this one when called from WASM.
+    function open(fn) {
+        read_file().then(
+            result => fn(result),
+            error => alert(error),
+        );
+    }
+
+    // Opening a file must be done via a secure context (basically https or from localhost),
+    // must be user initiated (like with this click)
+    // Also when running from localhost the chrome flag for native filesystem api must be enabled (at least as of Chrome 84)
+    async function read_file() {
+        let fileHandle;
+        // TODO I need a better error message when the chooseFileSystemEntries function doesn't exist because of the security issues above
+        [fileHandle] = await window.showOpenFilePicker();
+        const file = await fileHandle.getFile();
+        return file.arrayBuffer();
+    }
+
+    function toggleVisibility(el) {
+        if (el.type === "password") {
+            el.type = "text";
+        } else {
+            el.type = "password";
+        }
+    }
+
+    // TODO This function is what writing to a file looks like though I have not hooked it up to anything
+    // Get a filename for saving
+    async function getNewFileHandle() {
+      const opts = {
+        type: 'save-file',
+      };
+      const handle = await window.chooseFileSystemEntries(opts);
+      return handle;
+    }
+    async function writeFile(fileHandle, contents) {
+      // Create a FileSystemWritableFileStream to write to.
+      const writable = await fileHandle.createWritable();
+      // Write the contents of the file to the stream.
+      await writable.write(contents);
+      // Close the file and write the contents to disk.
+      await writable.close();
+    }
+</script>
+<!-- Services Worker to enable offline usage -->
+<script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then((reg) => {
+              console.log('Service worker registered.', reg);
+            });
+      });
+    }
+</script>
+<body>
+    <div id="PasswordDB">Loading. . .</div>
+</body>
+</html>
