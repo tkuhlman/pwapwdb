@@ -3,8 +3,8 @@
 <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
     <meta charset="utf-8"/>
-    <link rel="manifest" href="/manifest.json"/>
-    <link rel="icon" type="image/png" href="/icons/lock-256x256.png" sizes="256x256">
+    <link rel="manifest" href="./manifest.json"/>
+    <link rel="icon" type="image/png" href="./icons/lock-256x256.png" sizes="256x256">
     <meta name="description" content="Progressive Web App password DB"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="theme-color" content="#2F3BA2"/>
@@ -65,7 +65,7 @@
 <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('./service-worker.js')
             .then((reg) => {
               console.log('Service worker registered.', reg);
             });
