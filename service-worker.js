@@ -8,10 +8,10 @@ const FILES_TO_CACHE = [
   './icons/lock-256x256.png',
   './icons/lock-512x512.png',
   './service-worker.js',
-  './static/wasm.d.ts',
-  './static/wasm.js',
-  './static/wasm_bg.d.ts',
-  './static/wasm_bg.wasm'
+  './wasm/wasm.d.ts',
+  './wasm/wasm.js',
+  './wasm/wasm_bg.d.ts',
+  './wasm/wasm_bg.wasm'
 ];
 
 
