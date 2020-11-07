@@ -28,6 +28,7 @@ jobs:
       - name: Build wasm
         run: wasm-pack build --target web --out-name wasm --out-dir wasm
         working-directory: pwa
+      - run: rm pwa/wasm/.gitignore
       - run: mkdir build && cp -r pwa/*.html pwa/*.js pwa/manifest.json pwa/icons pwa/wasm build/
       - name: Archive site build
         uses: actions/upload-artifact@v2
