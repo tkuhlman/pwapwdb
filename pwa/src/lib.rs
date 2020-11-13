@@ -9,16 +9,19 @@ use yew::services::{ConsoleService, DialogService};
 #[wasm_bindgen]
 extern "C" {
     fn open(payload: JsValue);
+    fn pw_prompt(payload: JsValue);
 }
 
 pub enum Msg {
     OpenDB,
+    Password(JsValue),
     UnencryptedDB(JsValue),
 }
 
 struct PasswordDB {
     db: Option<pwdb::Database>,
     link: ComponentLink<Self>,
+    raw_db: Option<Vec<u8>>,
 }
 
 impl Component for PasswordDB {
@@ -28,31 +31,41 @@ impl Component for PasswordDB {
         Self {
             db: None,
             link,
+            raw_db: None,
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::UnencryptedDB(contents) => {
-                let window = web_sys::window().expect("no global `window` exists");
-                // TODO Ideally I need this to mask the password which probably means not using this type of prompt
-                let pw = match window.prompt_with_message("Password:") {
-                    Ok(resp) => {
-                        match resp {
-                            Some(pw) => pw,
-                            None => {
-                                DialogService::alert("A password is required to open a Password DB");
-                                return false
-                            }
-                        }
-                    },
-                    Err(e) => {
-                        DialogService::alert(&format!("{:#?}", e));
-                        return false
+                let raw: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(contents) {
+                    Ok(value) => value,
+                    Err(msg) => {
+                        DialogService::alert(&format!("Failed decoding Password DB file {}", msg));
+                        return false;
                     }
                 };
+                self.raw_db = Some(raw.into_vec());
 
-                self.db = open_db(contents, &pw);
+                let callback = self.link.callback(Msg::Password);
+                pw_prompt(Closure::once_into_js(move |payload: JsValue| {
+                    callback.emit(payload)
+                }));
+                return false
+            },
+            Msg::Password(password) => {
+                let raw = self.raw_db.as_ref().expect("no DB to open was specified");
+                let pw = password.as_string().expect("password is not a string");
+                self.db = match pwdb::Database::new(raw, &pw) {
+                    Ok(db) => {
+                        ConsoleService::info(&format!("Opened DB named {}", db.header.name));
+                        Some(db)
+                    },
+                    Err(msg) => {
+                        DialogService::alert(&format!("failed opening DB: {}", msg));
+                        return false
+                    },
+                }
             },
             Msg::OpenDB => {
                 // The Javascript functions to open a file are asynchronous. Neither Javascript nor
@@ -114,27 +127,6 @@ impl Component for PasswordDB {
                 </>
             }
         }
-    }
-}
-
-// open_db opens DB given the encrypted bytes as JsValue
-fn open_db(val: JsValue, password: &str) -> Option<pwdb::Database> {
-    let contents: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(val) {
-        Ok(value) => value,
-        Err(msg) => {
-            DialogService::alert(&format!("Failed decoding Password DB file {}", msg));
-            return None;
-        }
-    };
-    match pwdb::Database::new(contents.into_vec(), password) {
-        Ok(db) => {
-            ConsoleService::info(&format!("Opened DB named {}", db.header.name));
-            Some(db)
-        },
-        Err(msg) => {
-            DialogService::alert(&format!("failed opening DB: {}", msg));
-            None
-        },
     }
 }
 

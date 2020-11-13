@@ -41,7 +41,7 @@ pub struct Database {
 impl Database {
     // TODO consider switching to std::error::Error rather than a string for the Err result
     // new creates a new database by reading from an encrypted data
-    pub fn new(bytes: Vec<u8>, password: &str) -> Result<Database, String> {
+    pub fn new(bytes: &Vec<u8>, password: &str) -> Result<Database, String> {
         if bytes.len() < 200 {
             return Err("DB data is less than minimum size".to_string());
         };

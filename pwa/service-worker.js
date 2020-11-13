@@ -5,9 +5,10 @@ const CACHE_NAME = 'pwapwdb';
 const FILES_TO_CACHE = [
   './index.html',
   './manifest.json',
+  './service-worker.js',
+  './styles.css',
   './icons/lock-256x256.png',
   './icons/lock-512x512.png',
-  './service-worker.js',
   './wasm/wasm.d.ts',
   './wasm/wasm.js',
   './wasm/wasm_bg.d.ts',
