@@ -60,18 +60,17 @@
     // Also when running from localhost the chrome flag for native filesystem api must be enabled (at least as of Chrome 84)
     async function read_file() {
         let fileHandle;
-        if ("showOpenFilePicker" in window) {
-            [fileHandle] = await window.showOpenFilePicker();
-            const file = await fileHandle.getFile();
-            return file.arrayBuffer();
-        } else if ("chooseFileSystemEntries" in window) {
-            // This was the name of the file picker in the draft proposal and can eventually be removed
-            fileHandle = await window.chooseFileSystemEntries();
-            const file = await fileHandle.getFile();
-            return file.arrayBuffer();
-        } else {
+        if (!("showOpenFilePicker" in window)) {
             alert("The file system API is not enabled, this could be because this page is not running in a secure context")
+            return []
         }
+        // TODO For Android I probably have to fall back to making an <input type="file"/> adding an on change handler then triggering it
+        // An example of this being done, https://github.com/christianliebel/paint/blob/44a959e3932c44310a277e86450194f8b251af8b/web_modules/common/file-open-f9a5f1c4.js
+        // more details at https://whatwebcando.today/files.html
+
+        [fileHandle] = await window.showOpenFilePicker();
+        const file = await fileHandle.getFile();
+        return file.arrayBuffer();
     }
 
     function toggleVisibility(el) {
