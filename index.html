@@ -60,10 +60,18 @@
     // Also when running from localhost the chrome flag for native filesystem api must be enabled (at least as of Chrome 84)
     async function read_file() {
         let fileHandle;
-        // TODO I need a better error message when the chooseFileSystemEntries function doesn't exist because of the security issues above
-        [fileHandle] = await window.showOpenFilePicker();
-        const file = await fileHandle.getFile();
-        return file.arrayBuffer();
+        if ("showOpenFilePicker" in window) {
+            [fileHandle] = await window.showOpenFilePicker();
+            const file = await fileHandle.getFile();
+            return file.arrayBuffer();
+        } else if ("chooseFileSystemEntries" in window) {
+            // This was the name of the file picker in the draft proposal and can eventually be removed
+            fileHandle = await window.chooseFileSystemEntries();
+            const file = await fileHandle.getFile();
+            return file.arrayBuffer();
+        } else {
+            alert("The file system API is not enabled, this could be because this page is not running in a secure context")
+        }
     }
 
     function toggleVisibility(el) {
