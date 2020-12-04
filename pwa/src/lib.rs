@@ -93,12 +93,12 @@ impl Component for PasswordDB {
         let render_record = |(_uuid, record): (&uuid::Uuid, &pwdb::record::Record)| {
             html! {
                 <tr>
-                    <td>{&record.group}</td>
-                    <td>{&record.title}</td>
-                    <td>{&record.username}</td>
-                    <td><input type="password" onClick="toggleVisibility(this)" readonly=true value={&record.password} /></td>
-                    <td>{&record.url}</td>
-                    <td>{&record.notes}</td>
+                    <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.group}</td>
+                    <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.title}</td>
+                    <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.username}</td>
+                    <td><input type="password" onMouseDown="toggleVisibility(this);navigator.clipboard.writeText(this.value)" onMouseUp="toggleVisibility(this)" readonly=true value={&record.password} /></td>
+                    <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.url}</td>
+                    <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.notes}</td>
                 </tr>
             }
         };
@@ -113,6 +113,7 @@ impl Component for PasswordDB {
             // TODO organize in tree hierarchy by group
                 <>
                     <h1>{format!("Password DB {}", db.header.name)}</h1>
+                    <h4>{"Tap value to copy to clipboard. Hold on password to reveal."}</h4>
                     <table>
                         <tr>
                             <th>{"Group"}</th>
