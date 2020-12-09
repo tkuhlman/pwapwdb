@@ -96,6 +96,19 @@ impl Database {
             records,
         })
     }
+
+    // record_search returns just the records that match the given search
+    pub fn record_search(&self, search: &str) -> HashMap<uuid::Uuid, Record> {
+        let results = self.records.iter()
+            .filter_map(|(uuid, record): (&uuid::Uuid, &record::Record)|
+                if record.matches(search) {
+                    return Some((*uuid, record.clone()));
+                } else {
+                    return None;
+                })
+            .collect::<HashMap<uuid::Uuid, Record>>();
+        return results;
+    }
 }
 
 // Field represents a header or record field used in the database.

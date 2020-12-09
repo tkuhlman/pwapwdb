@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use hmac::Mac;
 use uuid::Uuid;
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Record {
     pub access_time: Option<DateTime<Utc>>,
     autotype: String,
@@ -159,5 +159,13 @@ impl Record {
             return Err(format!("record is missing password, title: '{}'", r.title))
         }
         Ok((r, i))
+    }
+
+    pub fn matches(&self, search: &str) -> bool {
+        let fields = [&self.title, &self.group, &self.url, &self.username, &self.notes];
+        for field in fields.iter() {
+            if field.contains(search) { return true; }
+        }
+        false
     }
 }

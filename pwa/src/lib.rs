@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 extern crate console_error_panic_hook;
 
 use std::panic;
@@ -15,6 +16,7 @@ extern "C" {
 pub enum Msg {
     OpenDB,
     Password(JsValue),
+    Search(String),
     UnencryptedDB(JsValue),
 }
 
@@ -22,6 +24,7 @@ struct PasswordDB {
     db: Option<pwdb::Database>,
     link: ComponentLink<Self>,
     raw_db: Option<Vec<u8>>,
+    search: String,
 }
 
 impl Component for PasswordDB {
@@ -32,23 +35,18 @@ impl Component for PasswordDB {
             db: None,
             link,
             raw_db: None,
+            search: String::new(),
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::UnencryptedDB(contents) => {
-                let raw: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(contents) {
-                    Ok(value) => value,
-                    Err(msg) => {
-                        DialogService::alert(&format!("Failed decoding Password DB file {}", msg));
-                        return false;
-                    }
-                };
-                self.raw_db = Some(raw.into_vec());
-
-                let callback = self.link.callback(Msg::Password);
-                pw_prompt(Closure::once_into_js(move |payload: JsValue| {
+            Msg::OpenDB => {
+                // The Javascript functions to open a file are asynchronous. Neither Javascript nor
+                // WASM have multiple threads so I can't block waiting for that asynchronous function
+                // to return and instead need to have a callback.
+                let callback = self.link.callback(Msg::UnencryptedDB);
+                open(Closure::once_into_js(move |payload: JsValue| {
                     callback.emit(payload)
                 }));
                 return false
@@ -67,12 +65,22 @@ impl Component for PasswordDB {
                     },
                 }
             },
-            Msg::OpenDB => {
-                // The Javascript functions to open a file are asynchronous. Neither Javascript nor
-                // WASM have multiple threads so I can't block waiting for that asynchronous function
-                // to return and instead need to have a callback.
-                let callback = self.link.callback(Msg::UnencryptedDB);
-                open(Closure::once_into_js(move |payload: JsValue| {
+            Msg::Search(value) => {
+                self.search = value;
+                return true
+            }
+            Msg::UnencryptedDB(contents) => {
+                let raw: serde_bytes::ByteBuf = match serde_wasm_bindgen::from_value(contents) {
+                    Ok(value) => value,
+                    Err(msg) => {
+                        DialogService::alert(&format!("Failed decoding Password DB file {}", msg));
+                        return false;
+                    }
+                };
+                self.raw_db = Some(raw.into_vec());
+
+                let callback = self.link.callback(Msg::Password);
+                pw_prompt(Closure::once_into_js(move |payload: JsValue| {
                     callback.emit(payload)
                 }));
                 return false
@@ -113,7 +121,8 @@ impl Component for PasswordDB {
             // TODO organize in tree hierarchy by group
                 <>
                     <h1>{format!("Password DB {}", db.header.name)}</h1>
-                    <h4>{"Tap value to copy to clipboard. Hold on password to reveal."}</h4>
+                    <p><b>{"Search:"}</b> <input type="text" id="Search" oninput=self.link.callback(|e: InputData| Msg::Search(e.value)) /></p>
+                    <p>{"Tap value to copy to clipboard. Hold on password to reveal."}</p>
                     <table>
                         <tr>
                             <th>{"Group"}</th>
@@ -123,7 +132,7 @@ impl Component for PasswordDB {
                             <th>{"URL"}</th>
                             <th>{"Notes"}</th>
                         </tr>
-                    { for db.records.iter().map(render_record) }
+                    { for db.record_search(&self.search).iter().map(render_record) }
                     </table>
                 </>
             }
