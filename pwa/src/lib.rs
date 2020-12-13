@@ -14,6 +14,7 @@ extern "C" {
 }
 
 pub enum Msg {
+    Exit,
     OpenDB,
     Password(JsValue),
     Search(String),
@@ -41,6 +42,7 @@ impl Component for PasswordDB {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
+            Msg::Exit => self.db = None,
             Msg::OpenDB => {
                 // The Javascript functions to open a file are asynchronous. Neither Javascript nor
                 // WASM have multiple threads so I can't block waiting for that asynchronous function
@@ -121,8 +123,9 @@ impl Component for PasswordDB {
             // TODO organize in tree hierarchy by group
                 <>
                     <h1>{format!("Password DB {}", db.header.name)}</h1>
-                    <p><b>{"Search:"}</b> <input type="text" id="Search" oninput=self.link.callback(|e: InputData| Msg::Search(e.value)) /></p>
+                    <p> <b>{"Search:"}</b> <input type="text" id="Search" oninput=self.link.callback(|e: InputData| Msg::Search(e.value)) /> </p>
                     <p>{"Tap value to copy to clipboard. Hold on password to reveal."}</p>
+                    <p> <button type="button" id="Exit" onclick=self.link.callback(|_| Msg::Exit)>{"Close DB"}</button> </p>
                     <table>
                         <tr>
                             <th>{"Group"}</th>
