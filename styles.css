@@ -14,3 +14,27 @@
 .pw_prompt input {
     margin-bottom:10px;
 }
+
+
+table {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid black;
+  padding: 15px;
+  text-align: left;
+}
+th {
+  background-color: #4649fa;
+  color: white;
+}
+tr:hover td {
+    background-color: #82e0ff;
+}
+tr:nth-child(even) {
+  background-color: #fff;
+}
+tr:nth-child(odd) {
+  background-color: #a7d6fa;
+}
