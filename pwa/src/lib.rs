@@ -122,10 +122,11 @@ impl Component for PasswordDB {
             Some(db) => html! {
             // TODO organize in tree hierarchy by group
                 <>
-                    <h1>{format!("Password DB {}", db.header.name)}</h1>
+                    <h1>{format!("Password DB - {}", db.header.name)}</h1>
                     <p> <b>{"Search:"}</b> <input type="text" id="Search" oninput=self.link.callback(|e: InputData| Msg::Search(e.value)) /> </p>
                     <p>{"Tap value to copy to clipboard. Hold on password to reveal."}</p>
                     <p> <button type="button" id="Exit" onclick=self.link.callback(|_| Msg::Exit)>{"Close DB"}</button> </p>
+                    <div style="overflow-x:auto;">
                     <table>
                         <tr>
                             <th>{"Group"}</th>
@@ -137,6 +138,7 @@ impl Component for PasswordDB {
                         </tr>
                     { for db.record_search(&self.search).iter().map(render_record) }
                     </table>
+                    </div>
                 </>
             }
         }
