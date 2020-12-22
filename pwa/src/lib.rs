@@ -3,6 +3,7 @@ extern crate console_error_panic_hook;
 
 use std::panic;
 
+use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
 use yew::services::{ConsoleService, DialogService};
@@ -143,6 +144,17 @@ impl Component for PasswordDB {
             }
         }
     }
+
+    #[allow(unused_must_use)]
+    fn rendered(&mut self, _first_render: bool) {
+        let document = document();
+        let search = document.get_element_by_id("Search");
+        if let Some(input_element) = search {
+            if let Ok(input) = input_element.dyn_into::<web_sys::HtmlElement>() {
+                input.focus();
+            }
+        }
+    }
 }
 
 #[wasm_bindgen(start)]
@@ -150,10 +162,14 @@ pub fn run_app() {
     // enable improved panic error messages
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    let window = web_sys::window().expect("no global `window` exists");
-    let document = window.document().expect("should have a document on window");
+    let document = document();
     let body = document.body().expect("document should have a body");
     let div = body.children().get_with_name("PasswordDB").expect("body is missing PasswordDB child");
 
     App::<PasswordDB>::new().mount(div);
+}
+
+fn document() -> web_sys::Document {
+    let window = web_sys::window().expect("no global `window` exists");
+    window.document().expect("should have a document on window")
 }
