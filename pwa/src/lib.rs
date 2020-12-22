@@ -12,6 +12,7 @@ use yew::services::{ConsoleService, DialogService};
 extern "C" {
     fn open(payload: JsValue);
     fn pw_prompt(payload: JsValue);
+    fn set_window_focus();
 }
 
 pub enum Msg {
@@ -145,14 +146,12 @@ impl Component for PasswordDB {
         }
     }
 
-    #[allow(unused_must_use)]
-    fn rendered(&mut self, _first_render: bool) {
-        let document = document();
-        let search = document.get_element_by_id("Search");
-        if let Some(input_element) = search {
-            if let Ok(input) = input_element.dyn_into::<web_sys::HtmlElement>() {
-                input.focus();
-            }
+    fn rendered(&mut self, first_render: bool) {
+        set_search_focus();
+
+        if !first_render {
+            // Set focus back to search when returning to the window
+            set_window_focus();
         }
     }
 }
@@ -172,4 +171,15 @@ pub fn run_app() {
 fn document() -> web_sys::Document {
     let window = web_sys::window().expect("no global `window` exists");
     window.document().expect("should have a document on window")
+}
+
+#[allow(unused_must_use)]
+fn set_search_focus() {
+    let document = document();
+    let search = document.get_element_by_id("Search");
+    if let Some(input_element) = search {
+        if let Ok(input) = input_element.dyn_into::<web_sys::HtmlElement>() {
+            input.focus();
+        }
+    }
 }
