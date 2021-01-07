@@ -161,10 +161,10 @@ impl Record {
         Ok((r, i))
     }
 
-    // matches is a case insensitive search across a set of major record fields
+    // matches is a case insensitive search across a set of identifying record fields
     pub fn matches(&self, search: &str) -> bool {
         let s = search.to_lowercase();
-        let fields = [&self.title, &self.url, &self.notes];
+        let fields = [&self.title, &self.url];
         for field in fields.iter() {
             if field.to_lowercase().contains(&s) { return true; }
         }
