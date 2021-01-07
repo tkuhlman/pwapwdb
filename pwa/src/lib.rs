@@ -108,12 +108,13 @@ impl Component for PasswordDB {
                     <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.group}</td>
                     <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.title}</td>
                     <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.username}</td>
-                    <td><input type="password" onMouseDown="toggleVisibility(this);navigator.clipboard.writeText(this.value)" onMouseUp="toggleVisibility(this)" readonly=true value={&record.password} /></td>
-                    <td><a href={&record.url[..]} target="_blank">{&record.url}</a></td>
+                    <td onClick="navigator.clipboard.writeText(this.firstChild.value)"><input type="password" readonly=true value={&record.password} /><img src="icons/eye.svg" height="20" width="20" style="vertical-align:middle" onClick="toggleVisibility(this.previousSibling)"/></td>
+                    <td onClick="navigator.clipboard.writeText(this.firstChild.innerText)"><a href={&record.url[..]} target="_blank">{&record.url}</a></td>
                     <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.notes}</td>
                 </tr>
             }
         };
+
 
         match &self.db {
             None => html! {
@@ -122,11 +123,10 @@ impl Component for PasswordDB {
                 </>
             },
             Some(db) => html! {
-            // TODO organize in tree hierarchy by group
                 <>
                     <h1>{format!("Password DB - {}", db.header.name)}</h1>
                     <p> <b>{"Search:"}</b> <input type="text" id="Search" oninput=self.link.callback(|e: InputData| Msg::Search(e.value)) /> </p>
-                    <p>{"Tap value to copy to clipboard. Hold on password to reveal."}</p>
+                    <p>{"Tap value to copy to clipboard."}</p>
                     <p> <button type="button" id="Exit" onclick=self.link.callback(|_| Msg::Exit)>{"Close DB"}</button> </p>
                     <div style="overflow-x:auto;">
                     <table>
