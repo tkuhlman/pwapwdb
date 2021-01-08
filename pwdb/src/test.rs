@@ -102,7 +102,6 @@ fn record_search() {
 
     assert_eq!(db.record_search("group").len(), 3);
     assert_eq!(db.record_search("group2").len(), 1);
-    assert_eq!(db.record_search("last").len(), 1);
     assert_eq!(db.record_search("https").len(), 1);
 }
 
