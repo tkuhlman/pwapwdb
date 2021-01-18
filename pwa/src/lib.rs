@@ -109,7 +109,7 @@ impl Component for PasswordDB {
                     <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.title}</td>
                     <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.username}</td>
                     <td onClick="navigator.clipboard.writeText(this.firstChild.value)"><input type="password" readonly=true value={&record.password} /><img src="icons/eye.svg" height="20" width="20" style="vertical-align:middle" onClick="toggleVisibility(this.previousSibling)"/></td>
-                    <td onClick="navigator.clipboard.writeText(this.firstChild.innerText)"><a href={&record.url[..]} target="_blank">{&record.url}</a></td>
+                    <td><a href={&record.url[..]} target="_blank">{&record.url}</a></td>
                     <td onClick="navigator.clipboard.writeText(this.innerText)">{&record.notes}</td>
                 </tr>
             }
